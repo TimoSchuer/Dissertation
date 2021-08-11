@@ -15,7 +15,7 @@ shinyNetwork <- function(exb){
       output$ExbData <-  shiny::renderDataTable({DT::datatable(exb, filter= "top",selection = list(target = 'row', selected= c(seq(1:nrow(exb)))),options = list(lengthChange = TRUE, autoWidth= TRUE, scrollX= TRUE))})
       NetworkPlot <- shiny::eventReactive(input$plotData,{
         data <- exb[input$ExbData_rows_selected,]
-        Disseration::com_clust(data, variables = input$vars)})
+        Dissertation::com_clust(data, variables = input$vars)})
       output$Netzwerk <- shiny::renderPlot({plot(NetworkPlot()[[2]],NetworkPlot()[[3]],vertex.size=10, vertex.label.font=20, family="serif", edge.width=igraph::E(NetworkPlot()[[3]])$weight, sub= stringr::str_c("Modularity=",modularity(NetworkPlot()[[2]])))})
       output$clusterData <- shiny::renderDataTable({DT::datatable(NetworkPlot()[[1]],options = list(lengthChange = TRUE, autoWidth= TRUE, scrollX= TRUE))})
       output$Dcluster <- shiny::downloadHandler(filename = function(){paste(input$filename,".csv", sep="")}, content = function(file){write.csv(NetworkPlot()[[1]], file, row.names = FALSE)})

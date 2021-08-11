@@ -17,3 +17,4 @@ Imports:
     purrr,
     shiny,
     shinydashboard
+RoxygenNote: 7.1.1
