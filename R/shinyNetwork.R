@@ -1,17 +1,18 @@
 shinyNetwork <- function(exb){
   shiny::shinyApp(
     ui= shiny::fluidPage(
-      shiny::fluidRow(shiny::dataTableOutput("ExbData")),
+      shiny::fluidRow(DT::dataTableOutput("ExbData")),
       shiny::fluidRow(shiny::selectInput("vars", "Variablen auswählen", choices = names(exb), multiple = TRUE)),
       shiny::fluidRow(shiny::actionButton("plotData", "Auswahl plotten")),
       shiny::fluidRow(shiny::plotOutput("Netzwerk")),
       #fluidRow(textOutput("Variablen", "Ausgewählte Variablen")),
-      shiny::fluidRow(shiny::dataTableOutput("clusterData")),
+      shiny::fluidRow(DT::dataTableOutput("clusterData")),
       shiny::fluidRow(shiny::textInput("filename", "Enter filename"),
                       shiny::downloadButton("Dcluster", "Download"))
 
     ),
     server = function(input, output){
+      #output$ExbData <- DT::renderDataTable(DT::datatable(exb))
       output$ExbData <-  DT::renderDataTable({DT::datatable(exb, filter= "top",selection = list(target = 'row', selected= c(seq(1:nrow(exb)))),options = list(lengthChange = TRUE, autoWidth= TRUE, scrollX= TRUE))})
       NetworkPlot <- shiny::eventReactive(input$plotData,{
         data <- exb[input$ExbData_rows_selected,]
