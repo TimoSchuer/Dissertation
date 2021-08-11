@@ -12,7 +12,6 @@ com_clust <- function(data,variables = c(1:ncol(data)),weight= 1){
 
   group <- as.factor(igraph:::membership(cfg))
   data <- cbind(data,group)
-
   return(list(data,cfg, g1,
               plot(cfg, g1, vertex.size=10, vertex.label.font=20, family="serif", edge.width=igraph::E(g1)$weight, sub= stringr::str_c("Modularity=",igraph::modularity(cfg)))))
 }

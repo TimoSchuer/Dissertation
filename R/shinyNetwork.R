@@ -9,6 +9,7 @@ shinyNetwork <- function(exb){
       shiny::fluidRow(DT::dataTableOutput("clusterData")),
       shiny::fluidRow(shiny::textInput("filename", "Enter filename"),
                       shiny::downloadButton("Dcluster", "Download"))
+      #shiny::fluidRow(shiny::actionButton("Done","Ich habe fertig"))
 
     ),
     server = function(input, output){
@@ -18,9 +19,12 @@ shinyNetwork <- function(exb){
         data <- exb[input$ExbData_rows_selected,]
         Dissertation::com_clust(data, variables = input$vars)})
       output$Netzwerk <- shiny::renderPlot({plot(NetworkPlot()[[2]],NetworkPlot()[[3]],vertex.size=10, vertex.label.font=20, family="serif", edge.width=igraph::E(NetworkPlot()[[3]])$weight, sub= stringr::str_c("Modularity=",modularity(NetworkPlot()[[2]])))})
-      output$clusterData <- DT::renderDataTable({DT::datatable(NetworkPlot()[[1]],options = list(lengthChange = TRUE, autoWidth= TRUE, scrollX= TRUE))})
+      output$clusterData <- DT::renderDataTable({NetworkPlot()[[1]] %>% dplyr::select(-c("IpNumber","EventID", "Speaker", "TierID")) %>%  DT::datatable(.,options = list(pageLength=100, lengthChange = TRUE, autoWidth= TRUE, scrollX= TRUE))})
       output$Dcluster <- shiny::downloadHandler(filename = function(){paste(input$filename,".csv", sep="")}, content = function(file){write.csv(NetworkPlot()[[1]], file, row.names = FALSE)})
-
+      # shiny::observeEvent(input$Done,{
+      #    as.data.frame(NetworkPlot()[[1]])
+      #    shiny::stopApp(as.data.frame(NetworkPlot()[[1]]))
+      #  })
     }
   )
 }
