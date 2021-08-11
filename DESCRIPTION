@@ -10,6 +10,10 @@ License: What license is it under?
 Encoding: UTF-8
 LazyData: true
 Imports: 
+    cluster,
+    dplyr,
+    igraph,
     Matrix,
+    purrr,
     shiny,
     shinydashboard
