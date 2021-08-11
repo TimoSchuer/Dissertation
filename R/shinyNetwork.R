@@ -1,12 +1,12 @@
 shinyNetwork <- function(exb){
   shiny::shinyApp(
     ui= shiny::fluidPage(
-      shiny::fluidRow(DT::dataTableOutput("ExbData")),
+      shiny::fluidRow(shiny::dataTableOutput("ExbData")),
       shiny::fluidRow(shiny::selectInput("vars", "Variablen auswählen", choices = names(exb), multiple = TRUE)),
       shiny::fluidRow(shiny::actionButton("plotData", "Auswahl plotten")),
       shiny::fluidRow(shiny::plotOutput("Netzwerk")),
       #fluidRow(textOutput("Variablen", "Ausgewählte Variablen")),
-      shiny::fluidRow(DT::dataTableOutput("clusterData")),
+      shiny::fluidRow(shiny::dataTableOutput("clusterData")),
       shiny::fluidRow(shiny::textInput("filename", "Enter filename"),
                       shiny::downloadButton("Dcluster", "Download"))
 
