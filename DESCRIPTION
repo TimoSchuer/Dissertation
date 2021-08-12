@@ -12,9 +12,11 @@ LazyData: true
 Imports: 
     cluster,
     dplyr,
+    ggplot2,
     igraph,
     Matrix,
     purrr,
+    reshape2,
     shiny,
     shinydashboard
 RoxygenNote: 7.1.1
