@@ -9,7 +9,8 @@ shinyNetwork <- function(exb){
       shiny::fluidRow(DT::dataTableOutput("clusterData")),
       shiny::fluidRow(shiny::textInput("filename", "Enter filename"),
                       shiny::downloadButton("Dcluster", "Download")),
-      shiny::fluidRow(shiny::plotOutput("barplot"))
+      shiny::fluidRow(shiny::plotOutput("barplot")),
+      shiny::fluidRow(DT::dataTableOutput("countVars"))
       #shiny::fluidRow(shiny::actionButton("Done","Ich habe fertig"))
 
     ),
@@ -23,6 +24,7 @@ shinyNetwork <- function(exb){
       output$clusterData <- DT::renderDataTable({NetworkPlot()[[1]] %>% dplyr::select(c("IPId","File", "Name", "Text", input$vars, "group")) %>%  DT::datatable(.,options = list(pageLength=100, lengthChange = TRUE, autoWidth= TRUE, scrollX= TRUE))})
       output$Dcluster <- shiny::downloadHandler(filename = function(){paste(input$filename,".csv", sep="")}, content = function(file){write.csv(NetworkPlot()[[1]], file, row.names = FALSE)})
       output$barplot <- shiny::renderPlot({NetworkPlot()[[1]] %>% dplyr::select(input$vars, "group") %>% reshape2::melt(id.vars= "group") %>% dplyr::group_by(group, variable, value) %>% dplyr::count() %>% ggplot2::ggplot() + ggplot2::geom_bar( ggplot2::aes(y=n, x= variable, fill = value), stat= "identity", position = "stack", color = "black") + ggplot2::facet_grid(~ group)})
+      output$countVars <- DT::renderDataTable({NetworkPlot()[[1]] %>% dplyr::select(input$vars, "group") %>% reshape2::melt(id.vars= "group") %>% dplyr::group_by(group, variable, value) %>% dplyr::count()})
       # shiny::observeEvent(input$Done,{
       #    as.data.frame(NetworkPlot()[[1]])
       #    shiny::stopApp(as.data.frame(NetworkPlot()[[1]]))
