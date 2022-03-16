@@ -27,7 +27,7 @@ shinyNetwork <- function(exb){
       output$barplot <- shiny::renderPlot({NetworkPlot()[[1]] %>% dplyr::select(input$vars, "group") %>% reshape2::melt(id.vars= "group") %>% dplyr::group_by(group, variable, value) %>% dplyr::count() %>% dplyr::mutate(pos = cumsum(n) - (0.5 * n)) %>% ggplot2::ggplot(ggplot2::aes(y=n, x= variable, fill = value)) + ggplot2::geom_bar( stat= "identity", position = "stack", color = "black") + geom_text(aes(label = value),position = position_stack(vjust= 0.5), size= 3, angle= -90)+ ggplot2::facet_grid(~ group) + theme_bw()+ scale_colour_brewer(palette = "Paired")})
       output$countVars <- DT::renderDataTable({NetworkPlot()[[1]] %>% dplyr::select(input$vars, "group") %>% reshape2::melt(id.vars= "group") %>% dplyr::group_by(group, variable, value) %>% dplyr::count()})
     # ShinyAnalyse <- shiny::eventReactive(input$saveToVar,{DT::renderDataTable({NetworkPlot()[[1]] %>% dplyr::select(c("IPId","File", "Name", "Text", input$vars, "group"))%>%  assign("ShinyAnalyse",., envir = .GlobalEnv) %>% as.data.frame()})})
-      Test <<-shiny::eventReactive(input$saveToVar,{NetworkPlot()[[1]] %>% dplyr::select(c("IPId","File", "Name", "Text", input$vars, "group")) %>% as.data.frame()})
+      #Test <<-shiny::eventReactive(input$saveToVar,{NetworkPlot()[[1]] %>% dplyr::select(c("IPId","File", "Name", "Text", input$vars, "group")) %>% as.data.frame()}) %>% as.data.frame()
               # shiny::observeEvent(input$Done,{
       #    as.data.frame(NetworkPlot()[[1]])
       #    shiny::stopApp(as.data.frame(NetworkPlot()[[1]]))
