@@ -529,14 +529,15 @@ if(!is.na(seed)){
                                                  rowNumber = row,
                                                  tier = "beides"
                                                  )
-    }
-    DT::renderDataTable(transcript,
+
+      DT::renderDataTable(transcript,
                         selection= list(selected=11),
                         options=list(
                           paging=TRUE,
                           searching=FALSE,
                           pageLength=25))
-  }
+      }
+    }
   )
 
 # output transcriptSelected ------------------------------------------------
