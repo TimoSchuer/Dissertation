@@ -6,6 +6,7 @@
 #' @param pathPraat path where praat is saved
 #' @param pathSave path to save rds
 #' @param seed seed for random things to be repeatable
+#' @param AnnValue data.frame with values to annotate in dropdown menu
 #'
 #' @return
 #' @export
@@ -15,6 +16,7 @@
 #'
 shinyAnalyse <- function(kwic=data.frame(IPId=paste("a",1:10, sep=""),a=1:10,b=10:1),
                          corpus = data.frame(IPId=paste("a",1:30, sep=""),a=1:30,b=30:1),
+                         AnnValues = NA,
                          objectName=paste(deparse(substitute(kwic)),"_ann",sep=""),
                          pathPraat="../Praat",
                          pathSave=getwd(),
@@ -169,8 +171,53 @@ if(!is.na(seed)){
   server <- function(input, output,session){
 
 # server annotate ---------------------------------------------------------
+    if(!is.na(AnnValues)){
+      resultDF <- displayHTMLDF <- initHTMLDF <- initData <- kwic %>% dplyr::mutate(across(where(is.character), ~as.factor(.x)))
+
+      dropdownCols <- names(AnnValues)
+      dropdownIDs <- setNames(lapply(dropdownCols, function(x){paste0(x, seq_len(nrow(initData)))}), dropdownCols)
+
+      for(dropdownCol in dropdownCols){
+        colDropdownIDs <- dropdownIDs[[dropdownCol]]
+        initHTMLDF[[dropdownCol]] <- sapply(seq_along(colDropdownIDs), function(i){as.character(selectInput(inputId = colDropdownIDs[i], label = "", choices = unique(initData[[dropdownCol]]), selected = initData[[dropdownCol]][i]))})
+      }
+
+      reactiveHTMLDF <- reactive({
+        for(dropdownCol in dropdownCols){
+          colDropdownIDs <- dropdownIDs[[dropdownCol]]
+          displayHTMLDF[[dropdownCol]] <- sapply(seq_along(colDropdownIDs), function(i){as.character(selectInput(inputId = colDropdownIDs[i], label = "", choices = unique(initData[[dropdownCol]]), selected = input[[colDropdownIDs[i]]]))})
+        }
+        return(displayHTMLDF)
+      })
+
+      reactiveResultDF <- reactive({
+        for(dropdownCol in dropdownCols){
+          colDropdownIDs <- dropdownIDs[[dropdownCol]]
+          resultDF[[dropdownCol]] <- sapply(seq_along(colDropdownIDs), function(i){input[[colDropdownIDs[i]]]})
+        }
+        return(data)
+      })
+
+      output$my_table = DT::renderDataTable({
+        DT::datatable(
+          initHTMLDF, escape = FALSE, selection = 'none', rownames = FALSE,
+          options = list(paging = FALSE, ordering = FALSE, scrollx = TRUE, dom = "t",
+                         preDrawCallback = JS('function() { Shiny.unbindAll(this.api().table().node()); }'),
+                         drawCallback = JS('function() { Shiny.bindAll(this.api().table().node()); } ')
+          )
+        )
+      }, server = TRUE)
+
+      my_table_proxy <- dataTableProxy(outputId = "my_table", session = session)
+
+      observeEvent({sapply(unlist(dropdownIDs), function(x){input[[x]]})}, {
+        replaceData(proxy = my_table_proxy, data = reactiveHTMLDF(), rownames = FALSE) # must repeat rownames = FALSE see ?replaceData and ?dataTableAjax
+      }, ignoreInit = TRUE)
+
+    }
     hiddenCols <-which(names(kwic) %in% c("IPNumber" ,"EventID" ,"File","Speaker" ,"TierID", "TierCategory" ,"Start" ,"End" ,"Start_time",   "End_time", "pathAudio", "pathFile"))-1
     data <- kwic %>% dplyr::mutate(across(where(is.character), ~as.factor(.x)))
+
     output$data <- DT::renderDataTable(data ,
                                        editable=TRUE,
                                        filter="top",
