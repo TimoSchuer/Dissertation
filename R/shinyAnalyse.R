@@ -235,7 +235,11 @@ if(!is.na(seed)){
     shiny::observeEvent(input$data_rows_current,{
       s <- input$data_rows_current
       if(length(s)==1){
-        transcript <- Dissertation::showTranscript(data=data,corpus=corpus, rowNumber = s,tier = input$tiers)
+        transcript <- Dissertation::showTranscript(data=data,
+                                                   corpus=corpus,
+                                                   rowNumber = s,
+                                                   tier = input$tiers,
+                                                   lengthTranscript = input$lengthTranscript)
       }
       output$transcript <- DT::renderDataTable(transcript
                                                ,selection= list(selected=11),
@@ -247,7 +251,11 @@ if(!is.na(seed)){
     shiny::observeEvent(input$data_rows_selected,{
       r <- input$data_rows_selected
       if(length(r)==1){
-        transcript <- Dissertation::showTranscript(data=data,corpus=corpus, rowNumber = r,tier = input$tiers)
+        transcript <- Dissertation::showTranscript(data=data,
+                                                   corpus=corpus,
+                                                   rowNumber = r,
+                                                   tier = input$tiers,
+                                                   lengthTranscript = input$lengthTranscript)
       }
       output$transcript <- DT::renderDataTable(transcript
                                                ,selection= list(selected=11),
@@ -259,11 +267,19 @@ if(!is.na(seed)){
     shiny::observeEvent(input$tiers,{
       s <- input$data_rows_current
       if(length(s)==1){
-        transcript <- Dissertation::showTranscript(data=data,corpus=corpus, rowNumber = s,tier = input$tiers)
+        transcript <- Dissertation::showTranscript(data=data,
+                                                   corpus=corpus,
+                                                   rowNumber = s,
+                                                   tier = input$tiers,
+                                                   lengthTranscript = input$lengthTranscript)
       }else if(length(s)>1){
         r <- input$data_rows_selected
         if(length(r)==1){
-          transcript <- Dissertation::showTranscript(data=data,corpus=corpus, rowNumber = r,tier = input$tiers)
+          transcript <- Dissertation::showTranscript(data=data,
+                                                     corpus=corpus,
+                                                     rowNumber = r,
+                                                     tier = input$tiers,
+                                                     lengthTranscript = input$lengthTranscript)
         }
       }
       output$transcript <- DT::renderDataTable(transcript
