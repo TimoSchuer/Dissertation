@@ -52,6 +52,11 @@ if(!is.na(seed)){
                                             #shiny::actionButton("start","Start Praat"),
                                             shiny::fluidRow(shiny::selectInput("tiers", "Select Tiers to be shown",
                                                                                choices = c("Transkript", "Standard","beides"), selected = "beides")  ,
+                                                            shiny::numericInput("lengthTranscript",
+                                                                                min = 10,
+                                                                                max = 50,
+                                                                                value=10,
+                                                                                step=5),
                                                             shiny::actionButton("send","Send to Praat"),
                                                             shiny::actionButton("clear","Clear Praat")),
                                             shiny::fluidRow(

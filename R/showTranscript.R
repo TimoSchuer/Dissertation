@@ -4,12 +4,17 @@
 #' @param corpus corpus
 #' @param rowNumber row from data
 #' @param tier tier to show transkript
+#' @param lengthTranscript length of the transkript
 #'
 #' @return
 #' @export
 #'
 #' @examples
-showTranscript <- function(data= data.frame(),corpus=data.frame(),rowNumber=1, tier=c("beides","Standard","Transkript")){
+showTranscript <- function(data= data.frame(),
+                           corpus=data.frame(),
+                           rowNumber=1,
+                           tier=c("beides","Standard","Transkript"),
+                           lengthTranscript=10){
   if(length(tier)>1){
     tier <- "beides"
   }
@@ -24,22 +29,22 @@ showTranscript <- function(data= data.frame(),corpus=data.frame(),rowNumber=1, t
     selected <- 21
   }
   if(tier=="beides"){
-    if(selected<=10){
+    if(selected<=lengthTranscript){
       selected<- 11
     }
     transcript <- corpus %>%
       dplyr::select(IPId,Name,Text) %>%
-      dplyr::slice(seq(selected-10,selected+10))
+      dplyr::slice(seq(selected-lengthTranscript,selected+lengthTranscript))
   }else if(tier=="Standard" &
            stringr::str_detect(corpus[selected,"File"],"Weg")){
     transcript <- corpus %>%
-      dplyr::slice(seq(selected-20,selected+20)) %>%
+      dplyr::slice(seq(selected-lengthTranscript,selected+lengthTranscript)) %>%
       dplyr::filter(TierCategory=="min") %>%
       dplyr::select(IPId,Name,Text)
   }else if(tier=="Standard" &
            stringr::str_detect(corpus[selected,"File"],"Dia|WEBER")){
     transcript <- corpus%>%
-      dplyr::slice(seq(selected-20,selected+20)) %>%
+      dplyr::slice(seq(selected-lengthTranscript,selected+lengthTranscript)) %>%
       dplyr::filter(TierCategory=="SD"|TierCategory=="Übersetzungsspur") %>%
       dplyr::select(IPId,Name,Text)
   }else if(tier=="Transkript" &
@@ -56,9 +61,11 @@ showTranscript <- function(data= data.frame(),corpus=data.frame(),rowNumber=1, t
                             corpus$File== corpus[selected,"File"])
     selected_start <- intersect(selected_start,selected_end)
     if(selected_start %>% length()==0){
-      transcript <- corpus %>%dplyr::select(IPId,Name,Text) %>% dplyr::slice(seq(selected-10,selected+10))
+      transcript <- corpus %>%dplyr::select(IPId,Name,Text) %>%
+        dplyr::slice(seq(selected-lengthTranscript,selected+lengthTranscript))
     }else{
-      transcript <- corpus %>%dplyr::slice(seq(selected_start-20,selected_start+20)) %>%
+      transcript <- corpus %>%
+        dplyr::slice(seq(selected_start-lengthTranscript,selected_start+lengthTranscript)) %>%
         dplyr::filter(TierCategory=="bas") %>%
         dplyr::select(IPId,Name,Text)
 
@@ -73,7 +80,7 @@ showTranscript <- function(data= data.frame(),corpus=data.frame(),rowNumber=1, t
            length()==0){
     transcript <- corpus %>%
       dplyr::select(IPId,Name,Text) %>%
-      dplyr::slice(seq(selected-10,selected+10))
+      dplyr::slice(seq(selected-lengthTranscript,selected+lengthTranscript))
   }else if(tier=="Transkript" &
            stringr::str_detect(corpus[selected,"File"],"Dia|WEBER")){
     selected_start <-  which(corpus$Start_time==corpus[selected,"Start_time"]&
@@ -86,10 +93,11 @@ showTranscript <- function(data= data.frame(),corpus=data.frame(),rowNumber=1, t
     selected_start <- selected_start[1]
 
     if(selected_start %>% length()==0){
-      transcript <- corpus %>%dplyr::select(IPId,Name,Text) %>% dplyr::slice(seq(selected-10,selected+10))
+      transcript <- corpus %>%dplyr::select(IPId,Name,Text) %>%
+        dplyr::slice(seq(selected-lengthTranscript,selected+lengthTranscript))
     }else{
       transcript <- corpus %>%
-        dplyr::slice(seq(selected_start-20,selected_start+20)) %>%
+        dplyr::slice(seq(selected_start-lengthTranscript,selected_start+lengthTranscript)) %>%
         dplyr::filter(TierCategory=="ND"|TierCategory=="platt") %>%
         dplyr::select(IPId,Name,Text)
 
