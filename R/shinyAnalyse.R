@@ -16,7 +16,7 @@
 #'
 shinyAnalyse <- function(kwic=data.frame(IPId=paste("a",1:10, sep=""),a=1:10,b=10:1),
                          corpus = data.frame(IPId=paste("a",1:30, sep=""),a=1:30,b=30:1),
-                         AnnValues = NA,
+                         AnnValues = NULL,
                          objectName=paste(deparse(substitute(kwic)),"_ann",sep=""),
                          pathPraat="../Praat",
                          pathSave=getwd(),
@@ -24,9 +24,19 @@ shinyAnalyse <- function(kwic=data.frame(IPId=paste("a",1:10, sep=""),a=1:10,b=1
 if(!is.na(seed)){
   set.seed(seed)
 }
+  dataInit <-  kwic %>%
+    dplyr::mutate(across(where(is.character), ~as.factor(.x))) %>%
+    addDropdown(AnnValues)
 # ui ----------------------------------------------------------------------
   ui <- shiny::fluidPage(
     shiny::fluidRow(
+      tags$script(
+        HTML("$(document).on(
+      'shiny:inputchanged',
+      function(event) {
+       console.log(event);
+    });"
+        )),
       shiny::column(width = 2, offset = 10,
                     shiny::actionButton("quit","Quit")
       )
@@ -54,6 +64,8 @@ if(!is.na(seed)){
                                             #shiny::actionButton("start","Start Praat"),
                                             shiny::fluidRow(shiny::selectInput("tiers", "Select Tiers to be shown",
                                                                                choices = c("Transkript", "Standard","beides"), selected = "beides")  ,
+                                                            shiny::numericInput("lengthTranscript", "Length of Transcript",min = 10,max = 50, value = 10
+                                                                               ),
                                                             shiny::actionButton("send","Send to Praat"),
                                                             shiny::actionButton("clear","Clear Praat")),
                                             shiny::fluidRow(
@@ -169,52 +181,69 @@ if(!is.na(seed)){
 
       )))
   server <- function(input, output,session){
-
+    result <- kwic
+  selectInputIDs <- intersect(names(kwic), names(AnnValues)) %>%
+    sapply(paste0,"_", seq(1:nrow(kwic)), sep="")
 # server annotate ---------------------------------------------------------
-    if(!is.na(AnnValues)){
-      resultDF <- displayHTMLDF <- initHTMLDF <- initData <- kwic %>% dplyr::mutate(across(where(is.character), ~as.factor(.x)))
+    if(!is.null(AnnValues)){
+      hiddenCols <-which(names(kwic) %in% c("IPNumber" ,"EventID" ,"File","Speaker" ,"TierID", "TierCategory" ,"Start" ,"End" ,"Start_time",   "End_time", "pathAudio", "pathFile"))-1
 
-      dropdownCols <- names(AnnValues)
-      dropdownIDs <- setNames(lapply(dropdownCols, function(x){paste0(x, seq_len(nrow(initData)))}), dropdownCols)
-
-      for(dropdownCol in dropdownCols){
-        colDropdownIDs <- dropdownIDs[[dropdownCol]]
-        initHTMLDF[[dropdownCol]] <- sapply(seq_along(colDropdownIDs), function(i){as.character(selectInput(inputId = colDropdownIDs[i], label = "", choices = unique(initData[[dropdownCol]]), selected = initData[[dropdownCol]][i]))})
-      }
-
-      reactiveHTMLDF <- reactive({
-        for(dropdownCol in dropdownCols){
-          colDropdownIDs <- dropdownIDs[[dropdownCol]]
-          displayHTMLDF[[dropdownCol]] <- sapply(seq_along(colDropdownIDs), function(i){as.character(selectInput(inputId = colDropdownIDs[i], label = "", choices = unique(initData[[dropdownCol]]), selected = input[[colDropdownIDs[i]]]))})
-        }
-        return(displayHTMLDF)
+      dataDisplay <- shiny::reactive({
+        kwic %>%
+          dplyr::mutate(across(where(is.character), ~as.factor(.x))) %>%
+          addDropdown(AnnValues)
       })
-
-      reactiveResultDF <- reactive({
-        for(dropdownCol in dropdownCols){
-          colDropdownIDs <- dropdownIDs[[dropdownCol]]
-          resultDF[[dropdownCol]] <- sapply(seq_along(colDropdownIDs), function(i){input[[colDropdownIDs[i]]]})
+      dataResult <- reactive({
+        for(Var in names(AnnValues)){
+          values <- sapply(selectInputIDs[which(stringr::str_starts(selectInputIDs,Var))], function(x){input[[x]]})
+          result[[Var]] <- values
         }
-        return(data)
+        return(result)
       })
+      output$data <- DT::renderDataTable(dataInit,editable=TRUE,
+                                         filter="top",
+                                         rownames=FALSE,
+                                         extensions="Buttons",
+                                         plugins="input",
+                                         selection= list(mode="single"),
+                                         width= "100%",
+                                         escape = FALSE,
+                                         options = list(
+                                           paging = TRUE,
+                                           pagingType="input",
+                                           dom = 'Blfrtip',
+                                           lengthMenu = list(c(1,5, 15, -1), c('1','5', '15', 'All')),
+                                           pageLength=1,
+                                           searching = TRUE,
+                                           fixedColumns = FALSE,
+                                           autoFill=TRUE,
+                                           # autoWidth = FALSE,
+                                           ordering = FALSE,
+                                           scrollX = TRUE,
+                                           buttons = list(
+                                             list(extend='colvisGroup', text="Show", show=hiddenCols),
+                                             list(extend='colvisGroup', text="Hide", hide=hiddenCols),
+                                             "colvis"
+                                           ),
+                                           autoWidth = TRUE,
+                                           columnDefs = list(list(width = '100px', targets = "_all"),
+                                                             list(targets = hiddenCols, visible = FALSE))),
+                                         class = 'cell-border stripe',
+                                         preDrawCallback = JS('function() { Shiny.unbindAll(this.api().table().node()); }'),
+                                         drawCallback = JS('function() { Shiny.bindAll(this.api().table().node()); } '))
+      proxy <-  DT::dataTableProxy(outputId = "data", session = session)
+      shiny::observeEvent(input$data_cell_edit,{
+        data <<- DT::editData(data,proxy = proxy,input$data_cell_edit,resetPaging = FALSE, rownames = FALSE)
+        assign(objectName, data, envir = .GlobalEnv)
 
-      output$my_table = DT::renderDataTable({
-        DT::datatable(
-          initHTMLDF, escape = FALSE, selection = 'none', rownames = FALSE,
-          options = list(paging = FALSE, ordering = FALSE, scrollx = TRUE, dom = "t",
-                         preDrawCallback = JS('function() { Shiny.unbindAll(this.api().table().node()); }'),
-                         drawCallback = JS('function() { Shiny.bindAll(this.api().table().node()); } ')
-          )
-        )
-      }, server = TRUE)
+        # renderDataTable(data)
+      })
+      observeEvent({sapply(selectInputIDs, function(x){input[[x]]})},
+                   {
+                     DT::replaceData(proxy=proxy, data = dataDisplay(), rownames=FALSE)
+                   }, ignoreInit = TRUE)
 
-      my_table_proxy <- dataTableProxy(outputId = "my_table", session = session)
-
-      observeEvent({sapply(unlist(dropdownIDs), function(x){input[[x]]})}, {
-        replaceData(proxy = my_table_proxy, data = reactiveHTMLDF(), rownames = FALSE) # must repeat rownames = FALSE see ?replaceData and ?dataTableAjax
-      }, ignoreInit = TRUE)
-
-    }
+    } else{
     hiddenCols <-which(names(kwic) %in% c("IPNumber" ,"EventID" ,"File","Speaker" ,"TierID", "TierCategory" ,"Start" ,"End" ,"Start_time",   "End_time", "pathAudio", "pathFile"))-1
     data <- kwic %>% dplyr::mutate(across(where(is.character), ~as.factor(.x)))
 
@@ -255,6 +284,7 @@ if(!is.na(seed)){
 
       # renderDataTable(data)
     })
+    }
 
     # observeEvent(input$start,{
     #   system("start C:/Users/Admin/sciebo/Diss/Praat/praat.exe", intern = TRUE)
@@ -277,25 +307,26 @@ if(!is.na(seed)){
       s <- input$data_rows_current
       if(length(s)==1){
         transcript <- Dissertation::showTranscript(data=data,corpus=corpus, rowNumber = s,tier = input$tiers)
-      }
+
       output$transcript <- DT::renderDataTable(transcript
                                                ,selection= list(selected=11),
                                                options=list(
                                                  paging=TRUE,
                                                  searching=FALSE,
                                                  pageLength=25))
+      }
     })
     shiny::observeEvent(input$data_rows_selected,{
       r <- input$data_rows_selected
       if(length(r)==1){
         transcript <- Dissertation::showTranscript(data=data,corpus=corpus, rowNumber = r,tier = input$tiers)
-      }
-      output$transcript <- DT::renderDataTable(transcript
+        output$transcript <- DT::renderDataTable(transcript
                                                ,selection= list(selected=11),
                                                options=list(
                                                  paging=TRUE,
                                                  searching=FALSE,
                                                  pageLength=25))
+      }
     })
     shiny::observeEvent(input$tiers,{
       s <- input$data_rows_current
