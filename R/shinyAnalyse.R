@@ -53,6 +53,7 @@ if(!is.na(seed)){
                                             shiny::fluidRow(shiny::selectInput("tiers", "Select Tiers to be shown",
                                                                                choices = c("Transkript", "Standard","beides"), selected = "beides")  ,
                                                             shiny::numericInput("lengthTranscript",
+                                                                                label="Transkriptlänge einstellen",
                                                                                 min = 10,
                                                                                 max = 50,
                                                                                 value=10,
