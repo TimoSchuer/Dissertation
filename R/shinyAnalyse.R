@@ -13,9 +13,9 @@ shinyAnalyse <- function(kwic=data.frame(IPId=paste("a",1:10, sep=""),a=1:10,b=1
     shinydashboard::sidebarMenu(
       shinydashboard::menuItem("Annotieren", tabName = "annotate", icon = shiny::icon("pencil")),
       shinydashboard::menuItem("Annotation erkunden", tabName = "explore", icon = shiny::icon("search")),
-      shinydashboard::menuItem("Analysieren",  icon = shiny::icon("bar-chart-o"),
+      shinydashboard::menuItem("Analysieren",  icon = shiny::icon("chart-simple"),
                                shinydashboard::menuSubItem("umap", tabName = "umap"),
-                               shinydashboard::menuSubItem("Network", tabName = "Network")
+                               shinydashboard::menuSubItem("Network", tabName = "network", icon= shiny::icon("circle-nodes"))
       )
     )
   )
@@ -27,52 +27,23 @@ shinyAnalyse <- function(kwic=data.frame(IPId=paste("a",1:10, sep=""),a=1:10,b=1
                                 shinydashboard::box(
                                   width=12,
                                   title="Beleg",
-                                  shiny::dataTableOutput("kwic")
+                                  DT::dataTableOutput("kwic")
                                 )
                               ),
                               fluidRow(
-                                shinydashboard::box(
-                                  width=10,
-                                  div(style= "text-align: center;",
-                                      actionButton("prevItem",
-                                                   label="",
-                                                   icon=shiny::icon("arrow-up"))
-                                  ),
-
-                                  br(),
-                                  div(style="display: flex;",
-                                      actionButton("prevAnnCat",
-                                                   label="",
-                                                   icon=shiny::icon("arrow-left")),
-                                     div(style="width: 20px"),
-                                      shiny::selectInput("annCat",
-                                                         "Annotation",
-                                                         choices = c("a","b"),
-                                                         width = "80%"),
-                                     div(style="width: 20px"),
-                                      actionButton("nextAnnCat",
-                                                   label="",
-                                                   icon=shiny::icon("arrow-right"))
-                                  ),
-                                  br(),
-                                  textInput("annValue", "Annotation Wert", value = ""),
-                                  div(style= "text-align: center;",
-                                    actionButton("nextItem",
-                                                 label="",
-                                                 icon=shiny::icon("arrow-down"))
-                                  )
-                                ),
+                                annotateUiDash("annotate", width=8),
                                 shinydashboard::box(width = 2,
                                                     title= "Beleg anhören",
                                                     actionButton("sendPraat", "In Praat anhören", icon=shiny::icon("play")),
                                                     actionButton("clearPraat", "Praat aufräumen", icon=shiny::icon("trash"))
-                                )
+                                ),
+                                shinydashboard::valueBoxOutput("item")
                               ),
                               fluidRow(
                                 shinydashboard::box(
                                   width=12,
                                   title="Transkript",
-                                  shiny::dataTableOutput("transcript")
+                                  DT::dataTableOutput("transcript")
                                 )
                               )
 
@@ -80,8 +51,82 @@ shinyAnalyse <- function(kwic=data.frame(IPId=paste("a",1:10, sep=""),a=1:10,b=1
       shinydashboard::tabItem(tabName="explore",
                               shiny::h2("Annotation erkunden")
       ),
-      shinydashboard::tabItem(tabName="analyse",
-                              shiny::h2("Analysieren")
+      shinydashboard::tabItem(tabName="umap",
+                              shiny::h2("Analysieren umap"),
+                              fluidRow(
+                                shinydashboard::box(
+                                  width=4,
+                                  title="Select Items and Variables",
+                                  shiny::selectInput("umapItems",
+                                                     "Exclude Items",
+                                                     choices = 1:10,
+                                                     selected = FALSE,
+                                                     multiple = TRUE),
+                                  shiny::selectInput("umapVars",
+                                                     "Select Variables to consider",
+                                                     choices = c("a","b"),
+                                                     selected = c("a","b"),
+                                                     multiple =  TRUE)
+                                ),
+                                shinydashboard::box(
+                                  width=4,
+                                  title="umap parameter",
+                                  shiny::selectInput("metric",
+                                                     label="metric for DistMat",
+                                                     choices = c("euclidean", "manhattan", "gower"),
+                                                     selected = "gower"),
+                                  shiny::sliderInput("n_neighbors",
+                                                     label = "n_neighbors",
+                                                     min = 2,
+                                                     max = 10,#nrow(kwic)
+                                                     value=10,
+                                                     step=1),
+                                  shiny::sliderInput("minDist",
+                                                     label = "minDist",
+                                                     min=0.01,
+                                                     max=0.99,
+                                                     step = 0.05,
+                                                     value = 0.1)
+                                ),
+                                column(4,
+                                       shinydashboard::box(
+                                         width=NULL,
+                                         title="Controls Cluster",
+                                         shiny::sliderInput("minPts",
+                                                            label="minPts for clustering",
+                                                            min = 0,
+                                                            max = 15,#nrow(kwic),
+                                                            value=10,
+                                                            step=1),
+                                         shiny::selectInput("clusterBase",
+                                                            label = "base clustering on Vis oder DistMat",
+                                                            choices = c("visualisation","distMat"),
+                                                            selected = "Visualisation")
+                                       ),
+                                       shinydashboard::box(
+                                         width=NULL,
+                                         title="umap",
+                                         shiny::actionButton("saveUmapRDS",
+                                                             "Save umap to RDS",
+                                                             icon=shiny::icon("save")),
+                                         shiny::actionButton("saveUmapEnviroment",
+                                                             "Save umap to Enviroment",
+                                                             icon=shiny::icon("save")),
+                                       )
+                                )
+                              ),
+                              fluidRow(
+                                shinydashboard::box(
+                                  width=12,
+                                  title="umap",
+                                  shiny::plotOutput("umap")
+                                )
+                              )
+
+
+      ),
+      shinydashboard::tabItem(tabName="network",
+                              shiny::h2("Analysieren Network")
       )
     )
   )
@@ -90,7 +135,36 @@ shinyAnalyse <- function(kwic=data.frame(IPId=paste("a",1:10, sep=""),a=1:10,b=1
 
 
 
-  server <- function(input, output, session){}
+  server <- function(input, output, session){
+    kwic <- kwic %>% dplyr::mutate(across(where(is.factor), as.character))
+    Annotation <- annotateServer("annotate", kwic)
+    output$item <- shinydashboard::renderValueBox({
+      shinydashboard::valueBox(
+        value = paste(Annotation$item(), "von", nrow(kwic)),
+        subtitle = "Fortschritt",
+        icon = shiny::icon("list")
+      )
+    })
+    observeEvent(Annotation$item(),{
+      output$kwic <- DT::renderDataTable({
+        kwic[Annotation$item(),]
+      }, options = list(scrollX = TRUE))
+      output$transcript <- DT::renderDataTable({
+        Dissertation::showTranscript(kwic,
+                                     corpus = CorpusIP,
+                                     rowNumber = Annotation$item(),
+                                     tier= "beides")
+      }, options = list(scrollX = TRUE,
+                        pageLength = 50))
+    })
+    observeEvent(Annotation$data(),{
+      kwic <- kwic %>% dplyr::rows_update(Annotation$data(),
+                                          by = "TokenID")
+      output$kwic <- DT::renderDataTable({
+        kwic[Annotation$item(),]
+      }, options = list(scrollX = TRUE))
+    })
+  }
     shiny::shinyApp(ui=ui, server=server)
 
 }
